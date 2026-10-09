@@ -34,3 +34,9 @@ def test_hook_ignores_existing_bugs_but_catches_identical_new_ones(tmp_path):
     path.write_text(ONE_BUG)
     assert not hook.new_findings(ONE_BUG + "\n# a comment\n", str(path))
     assert hook.new_findings(ONE_BUG + ONE_BUG.replace("invoices(", "reports("), str(path))
+
+
+def test_rule_label_names_the_source():
+    assert scanner.rule_label("home.u.proj.trustmebro.learned.sql-format") == "learned rule sql-format"
+    assert scanner.rule_label("x.rules.base.trustmebro.python.sql-injection.string-built-query").startswith("base rule")
+    assert scanner.rule_label("python.django.security.injection.sql").startswith("Semgrep registry rule")
