@@ -35,9 +35,9 @@ def _insert(table: str, columns: list[str], row: list) -> None:
     try:
         client = db()
         if client is not None:
-            client.insert(f"antibody.{table}", [row], column_names=columns)
+            client.insert(f"trustmebro.{table}", [row], column_names=columns)
     except Exception as e:  # never break a scan over logging
-        print(f"antibody: ClickHouse logging skipped ({e})", file=sys.stderr)
+        print(f"trustmebro: ClickHouse logging skipped ({e})", file=sys.stderr)
 
 
 def log_finding(finding, verdict: str, blocked: bool, source: str) -> None:

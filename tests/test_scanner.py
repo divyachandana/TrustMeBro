@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from antibody import scanner
+from trustmebro import scanner
 
 DEMO = Path(__file__).resolve().parent.parent / "demo_app" / "app.py"
 

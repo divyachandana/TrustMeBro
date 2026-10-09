@@ -1,15 +1,15 @@
-"""Antibody MCP server: add it to Claude Code, Cursor or Pi."""
+"""TrustMeBro MCP server: add it to Claude Code, Cursor or Pi."""
 from dataclasses import asdict
 from pathlib import Path
 
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 
-from antibody import brain, scanner, store
-from antibody.scanner import Finding
+from trustmebro import brain, scanner, store
+from trustmebro.scanner import Finding
 
 load_dotenv()
-mcp = FastMCP("antibody")
+mcp = FastMCP("trustmebro")
 
 
 @mcp.tool

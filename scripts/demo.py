@@ -1,10 +1,12 @@
-"""Run the whole Antibody demo against demo_app/app.py and time each step.
+"""Run the whole TrustMeBro demo against demo_app/app.py and time each step.
 
 1. Catch: the agent tries to write the /orders endpoint; Semgrep flags it and Claude confirms it.
 2. Fix: Claude patches it.
 3. Remember: Claude writes a Semgrep rule that matches the bug but not the fix.
 4. Hunt: the new rule finds the sibling bugs in /products and /invoices.
 """
+import os
+import sys
 import time
 from pathlib import Path
 
@@ -12,7 +14,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from antibody import brain, scanner, store  # noqa: E402
+from trustmebro import brain, scanner, store  # noqa: E402
 
 DEMO = Path(__file__).resolve().parent.parent / "demo_app" / "app.py"
 
@@ -25,6 +27,8 @@ def step(name, fn, *args):
 
 
 def main() -> None:
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        sys.exit("Set ANTHROPIC_API_KEY (in .env or the environment) to run triage, fix and rule learning.")
     code = DEMO.read_text()
     findings = step("scan", scanner.scan_code, code, str(DEMO))
     first = min(findings, key=lambda f: f.line)

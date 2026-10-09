@@ -6,15 +6,15 @@ from pathlib import Path
 
 import anthropic
 
-from antibody import scanner
-from antibody.scanner import Finding
+from trustmebro import scanner
+from trustmebro.scanner import Finding
 
 MODEL = os.getenv("ANTHROPIC_MODEL", "claude-opus-5-5")
 # Security prompts can trip the cyber classifier; "default" re-runs a declined request on a fallback model.
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 SYSTEM = (
-    "You are Antibody, a defensive application-security reviewer embedded in a developer's IDE. "
+    "You are TrustMeBro, a defensive application-security reviewer embedded in a developer's IDE. "
     "You review code that an AI coding agent is about to write into the developer's own repository, "
     "confirm or dismiss static-analysis findings, write safe patches, and write Semgrep rules that detect "
     "the vulnerable pattern. Never produce exploit payloads."
@@ -119,7 +119,7 @@ def write_rule(finding: Finding, vulnerable_code: str, fixed_code: str, attempts
             f"Vulnerable code:\n```\n{vulnerable_code}\n```\n\nFixed code:\n```\n{fixed_code}\n```\n\n"
             "The rule must match the vulnerable code and must NOT match the fixed code. Generalize it so it catches "
             "the same pattern elsewhere (other variable names, other functions, other string-building styles). "
-            "Use an id starting with `antibody.learned.`." + feedback
+            "Use an id starting with `trustmebro.learned.`." + feedback
         )
         rule = _ask_json(prompt, RULE_SCHEMA, effort="medium")
         path = scanner.LEARNED_RULES / f"{rule['rule_id'].split('.')[-1]}.yaml"

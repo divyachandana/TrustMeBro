@@ -1,4 +1,4 @@
-"""Demo Flask app. Contains 3 planted SQL injections for Antibody's variant hunt.
+"""Demo Flask app. Contains 3 planted SQL injections for TrustMeBro's variant hunt.
 
 DO NOT DEPLOY. Intentionally vulnerable.
 """
@@ -34,4 +34,4 @@ def invoices():
     rows = db().execute(query).fetchall()
     return {"invoices": rows}
 
-# Live demo: ask the AI agent to "add a /users/search endpoint" here and watch Antibody block it.
+# Live demo: ask the AI agent to "add a /users/search endpoint" here and watch TrustMeBro block it.

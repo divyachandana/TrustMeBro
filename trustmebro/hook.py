@@ -7,7 +7,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from antibody import brain, scanner, store
+from trustmebro import brain, scanner, store
 
 
 def proposed_content(tool_name: str, tool_input: dict) -> str | None:
@@ -44,7 +44,7 @@ def main() -> None:
     if confirmed:
         lines = [f"- line {f.line} [{v['severity']}]: {v['explanation']}" for f, v in confirmed]
         print(
-            "Antibody blocked this edit because it introduces a vulnerability:\n" + "\n".join(lines)
+            "TrustMeBro blocked this edit because it introduces a vulnerability:\n" + "\n".join(lines)
             + "\nRewrite it safely (e.g. parameterized queries) and try again.",
             file=sys.stderr,
         )

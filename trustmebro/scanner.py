@@ -10,8 +10,8 @@ from pathlib import Path
 RULES_DIR = Path(__file__).resolve().parent.parent / "rules"
 BASE_RULES = RULES_DIR / "base"  # local rules, work offline
 LEARNED_RULES = RULES_DIR / "learned"
-# Registry packs need network access to semgrep.dev; set ANTIBODY_OFFLINE=1 to skip them.
-REGISTRY_CONFIGS = [] if os.getenv("ANTIBODY_OFFLINE") else ["p/python", "p/owasp-top-ten"]
+# Registry packs need network access to semgrep.dev; set TRUSTMEBRO_OFFLINE=1 to skip them.
+REGISTRY_CONFIGS = [] if os.getenv("TRUSTMEBRO_OFFLINE") else ["p/python", "p/owasp-top-ten"]
 # Semgrep's version check blocks for ~90s when semgrep.dev is slow or unreachable.
 SEMGREP_ENV = {**os.environ, "SEMGREP_ENABLE_VERSION_CHECK": "0", "SEMGREP_SEND_METRICS": "off"}
 
