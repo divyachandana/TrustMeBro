@@ -47,17 +47,21 @@ Then follow [DEMO.md](https://github.com/divyachandana/TrustMeBroDemo/blob/main/
 
 Then restart Claude Code.
 
-## Optional: ClickHouse logging
+## Logs
 
-Every catch, fix and learned rule can be logged to ClickHouse Cloud. Add your service's connection details (from its **Connect** panel, not the console API key) to a `.env` in your project:
+Every catch, fix and learned rule is appended to `.trustmebro/log.jsonl` in your project. To see them, run this in Claude Code:
 
 ```
-CLICKHOUSE_HOST=xxxx.us-east-1.aws.clickhouse.cloud
-CLICKHOUSE_USER=default
-CLICKHOUSE_PASSWORD=...
+/trustmebro:log
 ```
 
-Tables are created on first use. Open the service's **SQL console** and paste queries from [docs/clickhouse-queries.sql](docs/clickhouse-queries.sql). Without these settings, logging is skipped.
+Or query the file with ClickHouse itself, with no account needed:
+
+```bash
+clickhouse local -q "SELECT ts, path, line, rule_id, blocked FROM file('.trustmebro/log.jsonl') WHERE kind = 'findings' ORDER BY ts DESC"
+```
+
+To also send events to a ClickHouse Cloud service, add `CLICKHOUSE_HOST` and `CLICKHOUSE_PASSWORD` (from the service's **Connect** panel) to your project's `.env`, then use the queries in [docs/clickhouse-queries.sql](docs/clickhouse-queries.sql).
 
 ## Develop
 
