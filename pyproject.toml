@@ -1,6 +1,6 @@
 [project]
 name = "trustmebro"
-version = "0.2.0"
+version = "0.3.0"
 description = "An immune system for AI-written code"
 requires-python = ">=3.11"
 dependencies = [

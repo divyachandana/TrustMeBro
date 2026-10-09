@@ -1,0 +1,12 @@
+rules:
+  - id: trustmebro.python.nosql-injection.mongo-user-filter
+    languages: [python]
+    severity: ERROR
+    message: "MongoDB query built from raw request data. An attacker can send operators such as $ne or a $where script. Cast fields to str and build the filter yourself."
+    pattern-either:
+      - pattern: '$C.$M({..., "$where": $X, ...}, ...)'
+      - pattern: $C.$M(request.json, ...)
+      - pattern: $C.$M(request.get_json(...), ...)
+      - pattern: '$C.$M({..., $K: request.json[$F], ...}, ...)'
+      - pattern: '$C.$M({..., $K: request.get_json(...)[$F], ...}, ...)'
+      - pattern: '$C.$M({..., $K: request.json.get(...), ...}, ...)'
