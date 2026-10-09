@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "flask", "streamlit"]
+dev = ["pytest", "flask"]
 
 [project.scripts]
 trustmebro-mcp = "trustmebro.server:main"

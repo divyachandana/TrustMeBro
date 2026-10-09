@@ -49,7 +49,15 @@ Then restart Claude Code.
 
 ## Optional: ClickHouse logging
 
-Set `CLICKHOUSE_HOST`, `CLICKHOUSE_USER` and `CLICKHOUSE_PASSWORD` to log every catch, fix and rule. Without them, logging is skipped.
+Every catch, fix and learned rule can be logged to ClickHouse Cloud. Add your service's connection details (from its **Connect** panel, not the console API key) to a `.env` in your project:
+
+```
+CLICKHOUSE_HOST=xxxx.us-east-1.aws.clickhouse.cloud
+CLICKHOUSE_USER=default
+CLICKHOUSE_PASSWORD=...
+```
+
+Tables are created on first use. Open the service's **SQL console** and paste queries from [docs/clickhouse-queries.sql](docs/clickhouse-queries.sql). Without these settings, logging is skipped.
 
 ## Develop
 

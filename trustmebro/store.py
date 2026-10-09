@@ -1,7 +1,7 @@
 """Log findings, fixes and learned rules to ClickHouse.
 
 Logging is best-effort: with no CLICKHOUSE_HOST set, or ClickHouse down, every call is a no-op
-so the hook and MCP tools never fail because of the dashboard.
+so the hook and MCP tools never fail because of logging.
 """
 import os
 import sys
