@@ -29,7 +29,7 @@ class Finding:
     line: int
     severity: str
     message: str
-    code: str
+    code: str = ""
 
 
 @functools.cache

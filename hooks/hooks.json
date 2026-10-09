@@ -1,12 +1,23 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/trustmebro\" --bootstrap",
+            "timeout": 300
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --quiet --project \"${CLAUDE_PLUGIN_ROOT}\" trustmebro-hook",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/trustmebro\" trustmebro-hook",
             "timeout": 120
           }
         ]
