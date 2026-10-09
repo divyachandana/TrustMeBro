@@ -26,7 +26,8 @@ _client: anthropic.Anthropic | None = None
 def client() -> anthropic.Anthropic:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic()
+        # Some hosts reserve ANTHROPIC_API_KEY for their own use; TRUSTMEBRO_ANTHROPIC_KEY is a fallback name.
+        _client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or os.getenv("TRUSTMEBRO_ANTHROPIC_KEY"))
     return _client
 
 
