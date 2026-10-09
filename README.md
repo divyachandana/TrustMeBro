@@ -4,6 +4,28 @@
 
 A Claude Code plugin that blocks vulnerable code as your AI agent writes it, fixes it, and turns each bug into a Semgrep rule that finds its siblings.
 
+## Architecture
+
+Semgrep catches it, Claude judges it, TrustMeBro remembers it. Learned rules are kept only if they match the bug and not the fix. The plugin installs uv and Semgrep itself.
+
+```mermaid
+flowchart TD
+    dev([Developer]) --> agent[Claude Code agent writes code]
+    agent -- Write / Edit --> hook
+    subgraph plugin [TrustMeBro plugin, on your machine]
+        hook[1. Pre-write hook<br/>checks only the new code] --> scan[2. Semgrep scan<br/>base + learned rules]
+        scan --> triage[3. Claude triage<br/>real bug? why?]
+        triage --> verdict{4. Block or allow}
+        hunt[5. /trustmebro:hunt<br/>fix, learn rule, hunt variants]
+    end
+    verdict -- blocked, names the rule --> agent
+    base[(Base rules: SQL, MongoDB,<br/>prompt injection, rogue agents)] --> scan
+    hunt -- learned rule --> rules[(.trustmebro/rules/<br/>YAML in git, team memory)]
+    rules --> scan
+    verdict --> log[(.trustmebro/log.jsonl<br/>/trustmebro:log, ClickHouse)]
+    hunt --> log
+```
+
 ## Install
 
 In Claude Code:
