@@ -1,0 +1,13 @@
+{
+  "name": "trustmebro",
+  "version": "0.1.0",
+  "description": "Blocks vulnerable Write/Edit calls as they happen, fixes them, and turns every bug into a Semgrep rule that hunts its siblings.",
+  "author": { "name": "TrustMeBro team" },
+  "repository": "https://github.com/divyachandana/TrustMeBro",
+  "mcpServers": {
+    "trustmebro": {
+      "command": "uv",
+      "args": ["run", "--quiet", "--project", "${CLAUDE_PLUGIN_ROOT}", "trustmebro-mcp"]
+    }
+  }
+}

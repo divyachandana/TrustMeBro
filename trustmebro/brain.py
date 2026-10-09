@@ -108,7 +108,7 @@ def _rule_matches(rule_path: Path, code: str, suffix: str) -> bool:
 
 
 def write_rule(finding: Finding, vulnerable_code: str, fixed_code: str, attempts: int = 3) -> dict:
-    """Generate a Semgrep rule that matches the vulnerable code but not the fix, and save it to rules/learned/.
+    """Generate a Semgrep rule that matches the vulnerable code but not the fix, and save it to the project's .trustmebro/rules/.
 
     Returns {rule_id, path, yaml}. Retries with the failure reason until the rule validates and behaves.
     """
@@ -123,6 +123,7 @@ def write_rule(finding: Finding, vulnerable_code: str, fixed_code: str, attempts
             "Use an id starting with `trustmebro.learned.`." + feedback
         )
         rule = _ask_json(prompt, RULE_SCHEMA, effort="medium")
+        scanner.LEARNED_RULES.mkdir(parents=True, exist_ok=True)
         path = scanner.LEARNED_RULES / f"{rule['rule_id'].split('.')[-1]}.yaml"
         path.write_text(rule["yaml"])
 

@@ -1,4 +1,7 @@
-"""Run the whole TrustMeBro demo against demo_app/app.py and time each step.
+"""Run the whole TrustMeBro demo against a target app and time each step.
+
+Usage: python scripts/demo.py path/to/TrustMeBroDemo/app.py
+Learned rules are saved next to the target, in its repo's .trustmebro/rules/.
 
 1. Catch: the agent tries to write the /orders endpoint; Semgrep flags it and Claude confirms it.
 2. Fix: Claude patches it.
@@ -14,9 +17,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from trustmebro import brain, scanner, store  # noqa: E402
+if len(sys.argv) != 2:
+    sys.exit("usage: python scripts/demo.py path/to/app.py")
+DEMO = Path(sys.argv[1]).resolve()
+os.environ.setdefault("TRUSTMEBRO_RULES_DIR", str(DEMO.parent / ".trustmebro" / "rules"))
 
-DEMO = Path(__file__).resolve().parent.parent / "demo_app" / "app.py"
+from trustmebro import brain, scanner, store  # noqa: E402
 
 
 def step(name, fn, *args):

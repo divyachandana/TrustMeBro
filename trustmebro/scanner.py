@@ -10,9 +10,12 @@ import urllib.request
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-RULES_DIR = Path(__file__).resolve().parent.parent / "rules"
-BASE_RULES = RULES_DIR / "base"  # local rules, work offline
-LEARNED_RULES = RULES_DIR / "learned"
+BASE_RULES = Path(__file__).resolve().parent.parent / "rules" / "base"  # ships with the plugin, works offline
+# Learned rules are the project's memory, so they live in the project being protected, not in the plugin.
+LEARNED_RULES = Path(
+    os.getenv("TRUSTMEBRO_RULES_DIR")
+    or Path(os.getenv("CLAUDE_PROJECT_DIR") or Path.cwd()) / ".trustmebro" / "rules"
+)
 # Registry packs need network access to semgrep.dev; set TRUSTMEBRO_OFFLINE=1 to skip them.
 REGISTRY_PACKS = ["p/python", "p/owasp-top-ten"]
 # Semgrep's version check blocks for ~90s when semgrep.dev is slow or unreachable.

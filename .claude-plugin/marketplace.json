@@ -1,0 +1,14 @@
+{
+  "name": "trustmebro",
+  "description": "TrustMeBro: security guardrails for AI coding agents.",
+  "owner": {
+    "name": "divyachandana"
+  },
+  "plugins": [
+    {
+      "name": "trustmebro",
+      "source": "./",
+      "description": "An immune system for AI-written code: catch, fix, remember, hunt."
+    }
+  ]
+}

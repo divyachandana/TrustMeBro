@@ -39,7 +39,7 @@ def propose_fix(finding: dict, content: str) -> dict:
 
 @mcp.tool
 def learn_rule(finding: dict, vulnerable_code: str, fixed_code: str) -> dict:
-    """Turn a confirmed bug into a validated Semgrep rule saved under rules/learned/."""
+    """Turn a confirmed bug into a validated Semgrep rule saved in the project's .trustmebro/rules/."""
     rule = brain.write_rule(Finding(**finding), vulnerable_code, fixed_code)
     store.log_rule(rule["rule_id"], rule["yaml"], variants_found=0)
     return rule
