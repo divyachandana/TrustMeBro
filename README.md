@@ -32,17 +32,17 @@ Every vulnerability it catches becomes an **trustmebro**: a Semgrep rule that hu
 
 ## Install in Claude Code
 
-You need [`uv`](https://docs.astral.sh/uv/) and `semgrep` (`brew install semgrep` or `pipx install semgrep`) on your PATH, and an Anthropic key in `ANTHROPIC_API_KEY` (or `TRUSTMEBRO_ANTHROPIC_KEY`). Without a key the hook still blocks on Semgrep's findings alone.
-
 In Claude Code:
 
 ```
 /plugin install trustmebro --marketplace divyachandana/trustmebro
 ```
 
-On older Claude Code versions, run `/plugin marketplace add divyachandana/TrustMeBro` and then `/plugin install trustmebro@trustmebro`.
+Claude Code asks for your Anthropic API key (stored in your system keychain). That's it. On first start the plugin installs its own `uv`, Python dependencies and Semgrep into `~/.claude/plugins/data/`, which takes about 15 seconds once. Nothing goes on your global PATH.
 
-That installs the MCP tools (`scan_edit`, `triage`, `propose_fix`, `learn_rule`, `hunt_variants`), the hook that blocks vulnerable Write/Edit calls, and the `/trustmebro:hunt` command. Rules TrustMeBro learns are saved in your project under `.trustmebro/rules/`, so commit them and your whole team shares the memory.
+You get the MCP tools (`scan_edit`, `triage`, `propose_fix`, `learn_rule`, `hunt_variants`), the hook that blocks vulnerable Write/Edit calls, and the `/trustmebro:hunt` command. Rules TrustMeBro learns are saved in your project under `.trustmebro/rules/`. Commit them and your whole team shares the memory.
+
+ClickHouse logging is optional: set `CLICKHOUSE_HOST`, `CLICKHOUSE_USER` and `CLICKHOUSE_PASSWORD` to turn it on; without them it is skipped silently.
 
 Try it on the vulnerable sample app: [TrustMeBroDemo](https://github.com/divyachandana/TrustMeBroDemo).
 

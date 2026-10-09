@@ -2,12 +2,28 @@
   "name": "trustmebro",
   "version": "0.1.0",
   "description": "Blocks vulnerable Write/Edit calls as they happen, fixes them, and turns every bug into a Semgrep rule that hunts its siblings.",
-  "author": { "name": "TrustMeBro team" },
+  "author": {
+    "name": "TrustMeBro team"
+  },
   "repository": "https://github.com/divyachandana/TrustMeBro",
   "mcpServers": {
     "trustmebro": {
-      "command": "uv",
-      "args": ["run", "--quiet", "--project", "${CLAUDE_PLUGIN_ROOT}", "trustmebro-mcp"]
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/trustmebro",
+      "args": [
+        "trustmebro-mcp"
+      ],
+      "env": {
+        "TRUSTMEBRO_ANTHROPIC_KEY": "${user_config.anthropic_api_key}"
+      }
+    }
+  },
+  "userConfig": {
+    "anthropic_api_key": {
+      "type": "string",
+      "title": "Anthropic API key",
+      "description": "Your Anthropic API key. TrustMeBro uses it to triage findings, write fixes and learn new rules.",
+      "sensitive": true,
+      "required": true
     }
   }
 }

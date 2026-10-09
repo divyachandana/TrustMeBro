@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Plugin launcher: installs uv, the Python deps and Semgrep on first use, then runs a TrustMeBro command.
+# Usage: trustmebro <trustmebro-mcp|trustmebro-hook|--bootstrap>
+set -euo pipefail
+
+ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+DATA="${CLAUDE_PLUGIN_DATA:-$HOME/.trustmebro}"
+mkdir -p "$DATA"
+export PATH="$DATA/bin:$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+export UV_PROJECT_ENVIRONMENT="$DATA/venv" UV_TOOL_DIR="$DATA/tools" UV_TOOL_BIN_DIR="$DATA/bin"
+# The key entered when the plugin was enabled; an ANTHROPIC_API_KEY already in the env also works.
+if [ -n "${CLAUDE_PLUGIN_OPTION_ANTHROPIC_API_KEY:-}" ]; then
+  export TRUSTMEBRO_ANTHROPIC_KEY="$CLAUDE_PLUGIN_OPTION_ANTHROPIC_API_KEY"
+fi
+
+bootstrap() {
+  if ! command -v uv >/dev/null; then
+    echo "trustmebro: installing uv" >&2
+    curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="$DATA/bin" INSTALLER_NO_MODIFY_PATH=1 sh >&2 ||
+      { python3 -m venv "$DATA/uv-venv" && "$DATA/uv-venv/bin/pip" install --quiet uv >&2 &&
+        mkdir -p "$DATA/bin" && ln -sf "$DATA/uv-venv/bin/uv" "$DATA/bin/uv"; } ||
+      { echo "trustmebro: could not install uv; install it from https://docs.astral.sh/uv/" >&2; return 1; }
+  fi
+  if ! command -v semgrep >/dev/null; then
+    # Own tool env: Semgrep pins an older `mcp` than fastmcp needs, so it can't share the project venv.
+    echo "trustmebro: installing semgrep" >&2
+    uv tool install --quiet semgrep >&2 || return 1
+  fi
+  uv sync --quiet --project "$ROOT" >&2 || return 1
+}
+
+# The MCP server and the SessionStart hook can start together; let one of them install.
+LOCK="$DATA/.bootstrap.lock"
+until mkdir "$LOCK" 2>/dev/null; do
+  if [ -n "$(find "$LOCK" -maxdepth 0 -mmin +10 2>/dev/null)" ]; then rmdir "$LOCK" 2>/dev/null || true; fi
+  sleep 1
+done
+trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
+if [ ! -f "$DATA/.ready" ] || ! command -v semgrep >/dev/null || ! command -v uv >/dev/null; then
+  if bootstrap; then touch "$DATA/.ready"; else rmdir "$LOCK" 2>/dev/null; exit 1; fi
+fi
+rmdir "$LOCK" 2>/dev/null || true
+trap - EXIT
+
+[ "${1:-}" = "--bootstrap" ] && exit 0
+exec uv run --quiet --project "$ROOT" "$@"
