@@ -27,7 +27,13 @@ def main() -> None:
     if not content:
         sys.exit(0)
 
-    findings = scanner.scan_code(content, filename=tool_input.get("file_path", "snippet.py"))
+    filename = tool_input.get("file_path", "snippet.py")
+    findings = scanner.scan_code(content, filename=filename)
+    # Only block what this edit introduces; bugs already in the file are for /trustmebro:hunt, not this edit.
+    path = Path(filename)
+    if findings and path.exists():
+        existing = {(f.rule_id, f.code) for f in scanner.scan_code(path.read_text(), filename=filename)}
+        findings = [f for f in findings if (f.rule_id, f.code) not in existing]
 
     def check(f):
         try:
