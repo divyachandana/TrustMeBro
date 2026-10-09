@@ -12,6 +12,8 @@ BASE_RULES = RULES_DIR / "base"  # local rules, work offline
 LEARNED_RULES = RULES_DIR / "learned"
 # Registry packs need network access to semgrep.dev; set ANTIBODY_OFFLINE=1 to skip them.
 REGISTRY_CONFIGS = [] if os.getenv("ANTIBODY_OFFLINE") else ["p/python", "p/owasp-top-ten"]
+# Semgrep's version check blocks for ~90s when semgrep.dev is slow or unreachable.
+SEMGREP_ENV = {**os.environ, "SEMGREP_ENABLE_VERSION_CHECK": "0", "SEMGREP_SEND_METRICS": "off"}
 
 
 @dataclass
@@ -32,10 +34,10 @@ def _configs(include_learned: bool) -> list[str]:
 
 
 def scan_paths(paths: list[str], configs: list[str] | None = None, include_learned: bool = True) -> list[Finding]:
-    cmd = ["semgrep", "scan", "--json", "--quiet", "--metrics=off"]
+    cmd = ["semgrep", "scan", "--json", "--quiet", "--metrics=off", "--disable-version-check"]
     for c in configs or _configs(include_learned):
         cmd += ["--config", c]
-    proc = subprocess.run(cmd + paths, capture_output=True, text=True)
+    proc = subprocess.run(cmd + paths, capture_output=True, text=True, env=SEMGREP_ENV)
     output = json.loads(proc.stdout) if proc.stdout.strip() else {}
     if proc.returncode not in (0, 1) or not output:
         errors = [e.get("message", "") for e in output.get("errors", [])]
@@ -76,8 +78,21 @@ def scan_code(code: str, filename: str = "snippet.py", **kwargs) -> list[Finding
 
 
 def validate_rule(rule_path: str) -> bool:
-    proc = subprocess.run(["semgrep", "--validate", "--config", rule_path], capture_output=True, text=True)
-    return proc.returncode == 0
+    # `semgrep --validate` downloads lint rules from semgrep.dev; a local scan of an empty file is offline and ~2s.
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+        f.write("\n")
+    try:
+        proc = subprocess.run(
+            ["semgrep", "scan", "--json", "--quiet", "--metrics=off", "--disable-version-check",
+             "--config", rule_path, f.name],
+            capture_output=True, text=True, env=SEMGREP_ENV,
+        )
+    finally:
+        Path(f.name).unlink(missing_ok=True)
+    try:
+        return proc.returncode in (0, 1) and not json.loads(proc.stdout).get("errors")
+    except json.JSONDecodeError:
+        return False
 
 
 if __name__ == "__main__":
