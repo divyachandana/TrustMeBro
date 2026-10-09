@@ -4,6 +4,7 @@ Reads the hook payload on stdin. Exit code 2 blocks the tool call and sends stde
 """
 import json
 import sys
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -20,6 +21,24 @@ def proposed_content(tool_name: str, tool_input: dict) -> str | None:
     return None
 
 
+def new_findings(content: str, filename: str) -> list[scanner.Finding]:
+    """Findings this edit introduces. Bugs already in the file are for /trustmebro:hunt, not this edit."""
+    findings = scanner.scan_code(content, filename=filename)
+    path = Path(filename)
+    if not findings or not path.exists():
+        return findings
+    # Count matches rather than compare sets: a new `execute(query)` line can be identical to an old one.
+    existing = Counter((f.rule_id, f.code) for f in scanner.scan_code(path.read_text(), filename=filename))
+    new = []
+    for f in findings:
+        key = (f.rule_id, f.code)
+        if existing[key]:
+            existing[key] -= 1
+        else:
+            new.append(f)
+    return new
+
+
 def main() -> None:
     payload = json.load(sys.stdin)
     tool_input = payload.get("tool_input", {})
@@ -28,12 +47,7 @@ def main() -> None:
         sys.exit(0)
 
     filename = tool_input.get("file_path", "snippet.py")
-    findings = scanner.scan_code(content, filename=filename)
-    # Only block what this edit introduces; bugs already in the file are for /trustmebro:hunt, not this edit.
-    path = Path(filename)
-    if findings and path.exists():
-        existing = {(f.rule_id, f.code) for f in scanner.scan_code(path.read_text(), filename=filename)}
-        findings = [f for f in findings if (f.rule_id, f.code) not in existing]
+    findings = new_findings(content, filename)
 
     def check(f):
         try:
