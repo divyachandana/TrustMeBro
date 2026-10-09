@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from antibody import scanner
+from antibody import brain, scanner
 
 
 def proposed_content(tool_name: str, tool_input: dict) -> str | None:
@@ -27,10 +27,22 @@ def main() -> None:
         sys.exit(0)
 
     findings = scanner.scan_code(content, filename=tool_input.get("file_path", "snippet.py"))
-    # TODO(12:30): run brain.triage on each finding and only block confirmed ones
-    if findings:
-        lines = [f"- {f.rule_id} (line {f.line}): {f.message}" for f in findings]
-        print("Antibody blocked this edit:\n" + "\n".join(lines), file=sys.stderr)
+    confirmed = []
+    for f in findings:
+        try:
+            verdict = brain.triage(f, content)
+        except Exception as e:  # no API key or API down: fail closed on Semgrep's word
+            verdict = {"real": True, "severity": f.severity.lower(), "explanation": f"{f.message} (triage unavailable: {e})"}
+        if verdict["real"]:
+            confirmed.append((f, verdict))
+
+    if confirmed:
+        lines = [f"- line {f.line} [{v['severity']}]: {v['explanation']}" for f, v in confirmed]
+        print(
+            "Antibody blocked this edit because it introduces a vulnerability:\n" + "\n".join(lines)
+            + "\nRewrite it safely (e.g. parameterized queries) and try again.",
+            file=sys.stderr,
+        )
         sys.exit(2)
     sys.exit(0)
 
