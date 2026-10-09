@@ -2,13 +2,11 @@
 from dataclasses import asdict
 from pathlib import Path
 
-from dotenv import load_dotenv
 from fastmcp import FastMCP
 
 from trustmebro import brain, scanner, store
 from trustmebro.scanner import Finding
 
-load_dotenv()
 mcp = FastMCP("trustmebro")
 
 

@@ -62,7 +62,10 @@ def main() -> None:
         store.log_finding(f, "real" if v["real"] else "false_positive", blocked=v["real"], source="hook")
 
     if confirmed:
-        lines = [f"- line {f.line} [{v['severity']}]: {v['explanation']}" for f, v in confirmed]
+        lines = [
+            f"- line {f.line} [{v['severity']}] caught by {scanner.rule_label(f.rule_id)}: {v['explanation']}"
+            for f, v in confirmed
+        ]
         print(
             "TrustMeBro blocked this edit because it introduces a vulnerability:\n" + "\n".join(lines)
             + "\nRewrite it safely (e.g. parameterized queries) and try again.",

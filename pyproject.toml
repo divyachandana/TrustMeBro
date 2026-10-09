@@ -1,6 +1,6 @@
 [project]
 name = "trustmebro"
-version = "0.1.0"
+version = "0.3.0"
 description = "An immune system for AI-written code"
 requires-python = ">=3.11"
 dependencies = [
@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "flask", "streamlit"]
+dev = ["pytest", "flask"]
 
 [project.scripts]
 trustmebro-mcp = "trustmebro.server:main"

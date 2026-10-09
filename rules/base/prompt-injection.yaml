@@ -1,0 +1,19 @@
+rules:
+  - id: trustmebro.python.prompt-injection.user-input-in-system-prompt
+    languages: [python]
+    severity: ERROR
+    message: User input flows into the system prompt, so a user can rewrite the agent's instructions. Keep the system prompt fixed and pass user text only as a user message.
+    mode: taint
+    pattern-sources:
+      - pattern: request.args.get(...)
+      - pattern: request.args[...]
+      - pattern: request.form.get(...)
+      - pattern: request.json
+      - pattern: request.get_json(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-inside: $X.messages.create(..., system=$S, ...)
+          - focus-metavariable: $S
+      - patterns:
+          - pattern-inside: '{"role": "system", "content": $S}'
+          - focus-metavariable: $S

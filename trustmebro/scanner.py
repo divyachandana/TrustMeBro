@@ -45,6 +45,15 @@ def _registry_reachable() -> bool:
         return False
 
 
+def rule_label(rule_id: str) -> str:
+    """Where a rule came from, for messages. Semgrep prefixes local rule ids with their folder path."""
+    if "trustmebro.learned." in rule_id:
+        return "learned rule " + rule_id.split("trustmebro.learned.", 1)[1]
+    if ".rules.base." in rule_id or rule_id.startswith("trustmebro."):
+        return "base rule " + rule_id.split(".")[-1]
+    return "Semgrep registry rule " + rule_id
+
+
 def _configs(include_learned: bool) -> list[str]:
     configs = [str(BASE_RULES), *(REGISTRY_PACKS if _registry_reachable() else [])]
     if include_learned and any(LEARNED_RULES.glob("*.yaml")):

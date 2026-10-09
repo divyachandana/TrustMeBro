@@ -1,14 +1,19 @@
 """Log findings, fixes and learned rules to ClickHouse.
 
-Logging is best-effort: with no CLICKHOUSE_HOST set, or ClickHouse down, every call is a no-op
-so the hook and MCP tools never fail because of the dashboard.
+Every event is appended to .trustmebro/log.jsonl in the project. ClickHouse is best-effort: with no
+CLICKHOUSE_HOST set, or ClickHouse down, that part is a no-op
+so the hook and MCP tools never fail because of logging.
 """
+import json
 import os
 import sys
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 
 SCHEMA = Path(__file__).resolve().parent.parent / "db" / "schema.sql"
+# Always kept, so the logs are visible even without a ClickHouse service login.
+LOCAL_LOG = Path(os.getenv("CLAUDE_PROJECT_DIR") or Path.cwd()) / ".trustmebro" / "log.jsonl"
 
 
 @lru_cache
@@ -32,6 +37,13 @@ def db():
 
 
 def _insert(table: str, columns: list[str], row: list) -> None:
+    try:
+        LOCAL_LOG.parent.mkdir(parents=True, exist_ok=True)
+        entry = {"ts": datetime.now(timezone.utc).isoformat(timespec="seconds"), "kind": table, **dict(zip(columns, row))}
+        with LOCAL_LOG.open("a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except OSError as e:
+        print(f"trustmebro: local log skipped ({e})", file=sys.stderr)
     try:
         client = db()
         if client is not None:

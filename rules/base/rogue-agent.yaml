@@ -1,0 +1,17 @@
+rules:
+  - id: trustmebro.python.rogue-agent.executes-model-output
+    languages: [python]
+    severity: ERROR
+    message: The agent runs model output as code or a shell command. A prompt-injected or rogue model can then do anything on this machine. Map model output to an allowlist of safe actions instead.
+    mode: taint
+    pattern-sources:
+      - pattern: $R.content[0].text
+      - pattern: $R.choices[0].message.content
+      - pattern: $R.choices[0].message.tool_calls
+    pattern-sinks:
+      - pattern: eval(...)
+      - pattern: exec(...)
+      - pattern: os.system(...)
+      - pattern: os.popen(...)
+      - pattern: subprocess.$F(..., shell=True, ...)
+      - pattern: globals()[...]

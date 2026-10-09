@@ -34,3 +34,23 @@ def test_hook_ignores_existing_bugs_but_catches_identical_new_ones(tmp_path):
     path.write_text(ONE_BUG)
     assert not hook.new_findings(ONE_BUG + "\n# a comment\n", str(path))
     assert hook.new_findings(ONE_BUG + ONE_BUG.replace("invoices(", "reports("), str(path))
+
+
+def test_rule_label_names_the_source():
+    assert scanner.rule_label("home.u.proj.trustmebro.learned.sql-format") == "learned rule sql-format"
+    assert scanner.rule_label("x.rules.base.trustmebro.python.sql-injection.string-built-query").startswith("base rule")
+    assert scanner.rule_label("python.django.security.injection.sql").startswith("Semgrep registry rule")
+
+
+FIXTURES = __import__("pathlib").Path(__file__).parent / "fixtures"
+
+
+def test_base_rules_flag_mongo_prompt_and_rogue_agent_bugs():
+    found = scanner.scan_code((FIXTURES / "agent_bad.py").read_text(), include_learned=False)
+    kinds = {f.rule_id.split(".")[-2] for f in found}
+    assert {"nosql-injection", "prompt-injection", "rogue-agent"} <= kinds
+    assert len(found) == 8
+
+
+def test_base_rules_allow_safe_agent_code():
+    assert not scanner.scan_code((FIXTURES / "agent_good.py").read_text(), include_learned=False)

@@ -1,6 +1,6 @@
 {
   "name": "trustmebro",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Blocks vulnerable Write/Edit calls as they happen, fixes them, and turns every bug into a Semgrep rule that hunts its siblings.",
   "author": {
     "name": "TrustMeBro team"
