@@ -1,9 +1,12 @@
 """Run Semgrep on files or raw code and return normalized findings."""
+import functools
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import urllib.error
+import urllib.request
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -11,7 +14,7 @@ RULES_DIR = Path(__file__).resolve().parent.parent / "rules"
 BASE_RULES = RULES_DIR / "base"  # local rules, work offline
 LEARNED_RULES = RULES_DIR / "learned"
 # Registry packs need network access to semgrep.dev; set TRUSTMEBRO_OFFLINE=1 to skip them.
-REGISTRY_CONFIGS = [] if os.getenv("TRUSTMEBRO_OFFLINE") else ["p/python", "p/owasp-top-ten"]
+REGISTRY_PACKS = ["p/python", "p/owasp-top-ten"]
 # Semgrep's version check blocks for ~90s when semgrep.dev is slow or unreachable.
 SEMGREP_ENV = {**os.environ, "SEMGREP_ENABLE_VERSION_CHECK": "0", "SEMGREP_SEND_METRICS": "off"}
 
@@ -26,8 +29,21 @@ class Finding:
     code: str
 
 
+@functools.cache
+def _registry_reachable() -> bool:
+    """Semgrep stalls ~100s and then fails when semgrep.dev is blocked, so probe it once first."""
+    if os.getenv("TRUSTMEBRO_OFFLINE"):
+        return False
+    try:
+        urllib.request.urlopen("https://semgrep.dev/c/p/python", timeout=3).close()
+        return True
+    except (OSError, urllib.error.URLError):
+        print("trustmebro: semgrep.dev unreachable, using local rules only", file=sys.stderr)
+        return False
+
+
 def _configs(include_learned: bool) -> list[str]:
-    configs = [str(BASE_RULES), *REGISTRY_CONFIGS]
+    configs = [str(BASE_RULES), *(REGISTRY_PACKS if _registry_reachable() else [])]
     if include_learned and any(LEARNED_RULES.glob("*.yaml")):
         configs.append(str(LEARNED_RULES))
     return configs

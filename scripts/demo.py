@@ -51,6 +51,7 @@ def main() -> None:
     print(f"        {rule['rule_id']} -> {rule['path']}")
 
     variants = step("hunt variants", brain.hunt_variants, rule["path"], str(DEMO.parent))
+    variants = [v for v in variants if v.line != first.line]  # the bug we just fixed isn't a new find
     for v in variants:
         store.log_finding(v, "pending", blocked=False, source="variant_hunt")
         print(f"        line {v.line}: {v.code}")
