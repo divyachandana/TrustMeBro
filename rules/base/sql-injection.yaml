@@ -1,0 +1,18 @@
+rules:
+  - id: antibody.python.sql-injection.string-built-query
+    languages: [python]
+    severity: ERROR
+    message: SQL query built from a string with user input. Use parameterized queries instead.
+    patterns:
+      - pattern-either:
+          - pattern: $DB.execute(f"...", ...)
+          - pattern: $DB.execute("..." + $X + ..., ...)
+          - pattern: $DB.execute("..." % $X, ...)
+          - pattern: |
+              $Q = "..." % $X
+              ...
+              $DB.execute($Q, ...)
+          - pattern: |
+              $Q = f"..."
+              ...
+              $DB.execute($Q, ...)

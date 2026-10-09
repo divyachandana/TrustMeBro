@@ -1,0 +1,27 @@
+# Akash SDL (TODO 3:00): fill in image name after pushing the Docker image
+---
+version: "2.0"
+services:
+  antibody:
+    image: ghcr.io/OWNER/antibody:latest
+    expose:
+      - port: 8000
+        as: 80
+        to:
+          - global: true
+profiles:
+  compute:
+    antibody:
+      resources:
+        cpu: { units: 1 }
+        memory: { size: 1Gi }
+        storage: { size: 2Gi }
+  placement:
+    akash:
+      pricing:
+        antibody: { denom: uakt, amount: 1000 }
+deployment:
+  antibody:
+    akash:
+      profile: antibody
+      count: 1

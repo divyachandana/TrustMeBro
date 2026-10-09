@@ -1,0 +1,23 @@
+[project]
+name = "antibody"
+version = "0.1.0"
+description = "An immune system for AI-written code"
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=2.0",
+    "anthropic",
+    "clickhouse-connect",
+    "python-dotenv",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "flask", "streamlit"]
+
+[project.scripts]
+antibody-mcp = "antibody.server:main"
+antibody-hook = "antibody.hook:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
