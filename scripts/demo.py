@@ -27,7 +27,7 @@ def step(name, fn, *args):
 
 
 def main() -> None:
-    if not (os.getenv("ANTHROPIC_API_KEY") or os.getenv("TRUSTMEBRO_ANTHROPIC_KEY")):
+    if not (os.getenv("ANTHROPIC_API_KEY") or os.getenv("TRUSTMEBRO_ANTHROPIC_KEY") or os.getenv("TRUSTME_BRO_ANTHROPIC_API_KEY")):
         sys.exit("Set ANTHROPIC_API_KEY or TRUSTMEBRO_ANTHROPIC_KEY (in .env or the environment) to run triage, fix and rule learning.")
     code = DEMO.read_text()
     findings = step("scan", scanner.scan_code, code, str(DEMO))
