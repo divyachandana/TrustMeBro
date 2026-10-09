@@ -1,17 +1,25 @@
 """Run Semgrep on files or raw code and return normalized findings."""
+import functools
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import urllib.error
+import urllib.request
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-RULES_DIR = Path(__file__).resolve().parent.parent / "rules"
-BASE_RULES = RULES_DIR / "base"  # local rules, work offline
-LEARNED_RULES = RULES_DIR / "learned"
-# Registry packs need network access to semgrep.dev; set ANTIBODY_OFFLINE=1 to skip them.
-REGISTRY_CONFIGS = [] if os.getenv("ANTIBODY_OFFLINE") else ["p/python", "p/owasp-top-ten"]
+BASE_RULES = Path(__file__).resolve().parent.parent / "rules" / "base"  # ships with the plugin, works offline
+# Learned rules are the project's memory, so they live in the project being protected, not in the plugin.
+LEARNED_RULES = Path(
+    os.getenv("TRUSTMEBRO_RULES_DIR")
+    or Path(os.getenv("CLAUDE_PROJECT_DIR") or Path.cwd()) / ".trustmebro" / "rules"
+)
+# Registry packs need network access to semgrep.dev; set TRUSTMEBRO_OFFLINE=1 to skip them.
+REGISTRY_PACKS = ["p/python", "p/owasp-top-ten"]
+# Semgrep's version check blocks for ~90s when semgrep.dev is slow or unreachable.
+SEMGREP_ENV = {**os.environ, "SEMGREP_ENABLE_VERSION_CHECK": "0", "SEMGREP_SEND_METRICS": "off"}
 
 
 @dataclass
@@ -24,18 +32,31 @@ class Finding:
     code: str
 
 
+@functools.cache
+def _registry_reachable() -> bool:
+    """Semgrep stalls ~100s and then fails when semgrep.dev is blocked, so probe it once first."""
+    if os.getenv("TRUSTMEBRO_OFFLINE"):
+        return False
+    try:
+        urllib.request.urlopen("https://semgrep.dev/c/p/python", timeout=3).close()
+        return True
+    except (OSError, urllib.error.URLError):
+        print("trustmebro: semgrep.dev unreachable, using local rules only", file=sys.stderr)
+        return False
+
+
 def _configs(include_learned: bool) -> list[str]:
-    configs = [str(BASE_RULES), *REGISTRY_CONFIGS]
+    configs = [str(BASE_RULES), *(REGISTRY_PACKS if _registry_reachable() else [])]
     if include_learned and any(LEARNED_RULES.glob("*.yaml")):
         configs.append(str(LEARNED_RULES))
     return configs
 
 
 def scan_paths(paths: list[str], configs: list[str] | None = None, include_learned: bool = True) -> list[Finding]:
-    cmd = ["semgrep", "scan", "--json", "--quiet", "--metrics=off"]
+    cmd = ["semgrep", "scan", "--json", "--quiet", "--metrics=off", "--disable-version-check"]
     for c in configs or _configs(include_learned):
         cmd += ["--config", c]
-    proc = subprocess.run(cmd + paths, capture_output=True, text=True)
+    proc = subprocess.run(cmd + paths, capture_output=True, text=True, env=SEMGREP_ENV)
     output = json.loads(proc.stdout) if proc.stdout.strip() else {}
     if proc.returncode not in (0, 1) or not output:
         errors = [e.get("message", "") for e in output.get("errors", [])]
@@ -76,8 +97,21 @@ def scan_code(code: str, filename: str = "snippet.py", **kwargs) -> list[Finding
 
 
 def validate_rule(rule_path: str) -> bool:
-    proc = subprocess.run(["semgrep", "--validate", "--config", rule_path], capture_output=True, text=True)
-    return proc.returncode == 0
+    # `semgrep --validate` downloads lint rules from semgrep.dev; a local scan of an empty file is offline and ~2s.
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+        f.write("\n")
+    try:
+        proc = subprocess.run(
+            ["semgrep", "scan", "--json", "--quiet", "--metrics=off", "--disable-version-check",
+             "--config", rule_path, f.name],
+            capture_output=True, text=True, env=SEMGREP_ENV,
+        )
+    finally:
+        Path(f.name).unlink(missing_ok=True)
+    try:
+        return proc.returncode in (0, 1) and not json.loads(proc.stdout).get("errors")
+    except json.JSONDecodeError:
+        return False
 
 
 if __name__ == "__main__":

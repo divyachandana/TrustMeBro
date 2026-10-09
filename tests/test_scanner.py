@@ -1,10 +1,19 @@
-from pathlib import Path
+from trustmebro import scanner
 
-from antibody import scanner
+VULNERABLE = '''
+def orders(db, customer):
+    return db.execute(f"SELECT * FROM orders WHERE customer = '{customer}'").fetchall()
+'''
 
-DEMO = Path(__file__).resolve().parent.parent / "demo_app" / "app.py"
+SAFE = '''
+def orders(db, customer):
+    return db.execute("SELECT * FROM orders WHERE customer = ?", (customer,)).fetchall()
+'''
 
 
-def test_demo_app_has_planted_sqli():
-    findings = scanner.scan_paths([str(DEMO)], include_learned=False)
-    assert findings, "expected Semgrep to flag the planted SQL injections"
+def test_base_rule_flags_fstring_query():
+    assert scanner.scan_code(VULNERABLE, include_learned=False)
+
+
+def test_base_rule_allows_parameterized_query():
+    assert not scanner.scan_code(SAFE, include_learned=False)

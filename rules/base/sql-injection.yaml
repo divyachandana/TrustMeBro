@@ -1,5 +1,5 @@
 rules:
-  - id: antibody.python.sql-injection.string-built-query
+  - id: trustmebro.python.sql-injection.string-built-query
     languages: [python]
     severity: ERROR
     message: SQL query built from a string with user input. Use parameterized queries instead.

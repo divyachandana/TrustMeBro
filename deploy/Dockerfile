@@ -3,4 +3,4 @@ WORKDIR /app
 COPY . .
 RUN pip install --no-cache-dir -e ".[dev]"
 EXPOSE 8000 8501
-CMD ["antibody-mcp"]
+CMD ["trustmebro-mcp"]

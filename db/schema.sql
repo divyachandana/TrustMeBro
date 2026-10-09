@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS antibody;
+CREATE DATABASE IF NOT EXISTS trustmebro;
 
-CREATE TABLE IF NOT EXISTS antibody.findings (
+CREATE TABLE IF NOT EXISTS trustmebro.findings (
     ts        DateTime DEFAULT now(),
     rule_id   String,
     path      String,
@@ -12,14 +12,14 @@ CREATE TABLE IF NOT EXISTS antibody.findings (
     message   String
 ) ENGINE = MergeTree ORDER BY (ts, rule_id);
 
-CREATE TABLE IF NOT EXISTS antibody.rules (
+CREATE TABLE IF NOT EXISTS trustmebro.rules (
     ts              DateTime DEFAULT now(),
     rule_id         String,
     yaml            String,
     variants_found  UInt32
 ) ENGINE = MergeTree ORDER BY (ts, rule_id);
 
-CREATE TABLE IF NOT EXISTS antibody.fixes (
+CREATE TABLE IF NOT EXISTS trustmebro.fixes (
     ts            DateTime DEFAULT now(),
     rule_id       String,
     path          String,

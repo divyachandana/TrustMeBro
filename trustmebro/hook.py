@@ -4,9 +4,10 @@ Reads the hook payload on stdin. Exit code 2 blocks the tool call and sends stde
 """
 import json
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from antibody import brain, scanner
+from trustmebro import brain, scanner, store
 
 
 def proposed_content(tool_name: str, tool_input: dict) -> str | None:
@@ -26,20 +27,30 @@ def main() -> None:
     if not content:
         sys.exit(0)
 
-    findings = scanner.scan_code(content, filename=tool_input.get("file_path", "snippet.py"))
-    confirmed = []
-    for f in findings:
+    filename = tool_input.get("file_path", "snippet.py")
+    findings = scanner.scan_code(content, filename=filename)
+    # Only block what this edit introduces; bugs already in the file are for /trustmebro:hunt, not this edit.
+    path = Path(filename)
+    if findings and path.exists():
+        existing = {(f.rule_id, f.code) for f in scanner.scan_code(path.read_text(), filename=filename)}
+        findings = [f for f in findings if (f.rule_id, f.code) not in existing]
+
+    def check(f):
         try:
-            verdict = brain.triage(f, content)
+            return f, brain.triage(f, content)
         except Exception as e:  # no API key or API down: fail closed on Semgrep's word
-            verdict = {"real": True, "severity": f.severity.lower(), "explanation": f"{f.message} (triage unavailable: {e})"}
-        if verdict["real"]:
-            confirmed.append((f, verdict))
+            return f, {"real": True, "severity": f.severity.lower(), "explanation": f"{f.message} (triage unavailable: {e})"}
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        verdicts = list(pool.map(check, findings))
+    confirmed = [(f, v) for f, v in verdicts if v["real"]]
+    for f, v in verdicts:
+        store.log_finding(f, "real" if v["real"] else "false_positive", blocked=v["real"], source="hook")
 
     if confirmed:
         lines = [f"- line {f.line} [{v['severity']}]: {v['explanation']}" for f, v in confirmed]
         print(
-            "Antibody blocked this edit because it introduces a vulnerability:\n" + "\n".join(lines)
+            "TrustMeBro blocked this edit because it introduces a vulnerability:\n" + "\n".join(lines)
             + "\nRewrite it safely (e.g. parameterized queries) and try again.",
             file=sys.stderr,
         )

@@ -2,8 +2,8 @@
 ---
 version: "2.0"
 services:
-  antibody:
-    image: ghcr.io/OWNER/antibody:latest
+  trustmebro:
+    image: ghcr.io/OWNER/trustmebro:latest
     expose:
       - port: 8000
         as: 80
@@ -11,7 +11,7 @@ services:
           - global: true
 profiles:
   compute:
-    antibody:
+    trustmebro:
       resources:
         cpu: { units: 1 }
         memory: { size: 1Gi }
@@ -19,9 +19,9 @@ profiles:
   placement:
     akash:
       pricing:
-        antibody: { denom: uakt, amount: 1000 }
+        trustmebro: { denom: uakt, amount: 1000 }
 deployment:
-  antibody:
+  trustmebro:
     akash:
-      profile: antibody
+      profile: trustmebro
       count: 1

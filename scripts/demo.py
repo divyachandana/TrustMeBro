@@ -1,0 +1,68 @@
+"""Run the whole TrustMeBro demo against a target app and time each step.
+
+Usage: python scripts/demo.py path/to/TrustMeBroDemo/app.py
+Learned rules are saved next to the target, in its repo's .trustmebro/rules/.
+
+1. Catch: the agent tries to write the /orders endpoint; Semgrep flags it and Claude confirms it.
+2. Fix: Claude patches it.
+3. Remember: Claude writes a Semgrep rule that matches the bug but not the fix.
+4. Hunt: the new rule finds the sibling bugs in /products and /invoices.
+"""
+import os
+import sys
+import time
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+if len(sys.argv) != 2:
+    sys.exit("usage: python scripts/demo.py path/to/app.py")
+DEMO = Path(sys.argv[1]).resolve()
+os.environ.setdefault("TRUSTMEBRO_RULES_DIR", str(DEMO.parent / ".trustmebro" / "rules"))
+
+from trustmebro import brain, scanner, store  # noqa: E402
+
+
+def step(name, fn, *args):
+    start = time.perf_counter()
+    result = fn(*args)
+    print(f"[{time.perf_counter() - start:5.1f}s] {name}")
+    return result
+
+
+def main() -> None:
+    if not (os.getenv("ANTHROPIC_API_KEY") or os.getenv("TRUSTMEBRO_ANTHROPIC_KEY") or os.getenv("TRUSTME_BRO_ANTHROPIC_API_KEY")):
+        sys.exit("Set ANTHROPIC_API_KEY or TRUSTMEBRO_ANTHROPIC_KEY (in .env or the environment) to run triage, fix and rule learning.")
+    code = DEMO.read_text()
+    findings = step("scan", scanner.scan_code, code, str(DEMO))
+    first = min(findings, key=lambda f: f.line)
+    print(f"        caught line {first.line}: {first.code}")
+
+    verdict = step("triage", brain.triage, first, code)
+    store.log_finding(first, "real" if verdict["real"] else "false_positive", blocked=verdict["real"], source="hook")
+    print(f"        real={verdict['real']} [{verdict['severity']}] {verdict['explanation']}")
+
+    fix = step("fix", brain.propose_fix, first, code)
+    store.log_fix(first.rule_id, first.path, tests_passed=not any(
+        f.line == first.line for f in scanner.scan_code(fix["fixed_code"], str(DEMO), include_learned=False)))
+    print(f"        {fix['summary']}")
+
+    # Learn from the one bug: the vulnerable endpoint vs. its fixed version.
+    vulnerable = "\n".join(code.splitlines()[first.line - 4:first.line + 1])
+    fixed_lines = fix["fixed_code"].splitlines()
+    fixed = "\n".join(fixed_lines[first.line - 4:first.line + 1])
+    rule = step("learn rule", brain.write_rule, first, vulnerable, fixed)
+    print(f"        {rule['rule_id']} -> {rule['path']}")
+
+    variants = step("hunt variants", brain.hunt_variants, rule["path"], str(DEMO.parent))
+    variants = [v for v in variants if v.line != first.line]  # the bug we just fixed isn't a new find
+    for v in variants:
+        store.log_finding(v, "pending", blocked=False, source="variant_hunt")
+        print(f"        line {v.line}: {v.code}")
+    store.log_rule(rule["rule_id"], rule["yaml"], variants_found=len(variants))
+
+
+if __name__ == "__main__":
+    main()

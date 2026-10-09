@@ -6,15 +6,15 @@ from pathlib import Path
 
 import anthropic
 
-from antibody import scanner
-from antibody.scanner import Finding
+from trustmebro import scanner
+from trustmebro.scanner import Finding
 
 MODEL = os.getenv("ANTHROPIC_MODEL", "claude-opus-5-5")
 # Security prompts can trip the cyber classifier; "default" re-runs a declined request on a fallback model.
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 SYSTEM = (
-    "You are Antibody, a defensive application-security reviewer embedded in a developer's IDE. "
+    "You are TrustMeBro, a defensive application-security reviewer embedded in a developer's IDE. "
     "You review code that an AI coding agent is about to write into the developer's own repository, "
     "confirm or dismiss static-analysis findings, write safe patches, and write Semgrep rules that detect "
     "the vulnerable pattern. Never produce exploit payloads."
@@ -26,7 +26,8 @@ _client: anthropic.Anthropic | None = None
 def client() -> anthropic.Anthropic:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic()
+        # Some hosts reserve ANTHROPIC_API_KEY for their own use; TRUSTMEBRO_ANTHROPIC_KEY is a fallback name.
+        _client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or os.getenv("TRUSTMEBRO_ANTHROPIC_KEY") or os.getenv("TRUSTME_BRO_ANTHROPIC_API_KEY"))
     return _client
 
 
@@ -107,7 +108,7 @@ def _rule_matches(rule_path: Path, code: str, suffix: str) -> bool:
 
 
 def write_rule(finding: Finding, vulnerable_code: str, fixed_code: str, attempts: int = 3) -> dict:
-    """Generate a Semgrep rule that matches the vulnerable code but not the fix, and save it to rules/learned/.
+    """Generate a Semgrep rule that matches the vulnerable code but not the fix, and save it to the project's .trustmebro/rules/.
 
     Returns {rule_id, path, yaml}. Retries with the failure reason until the rule validates and behaves.
     """
@@ -119,9 +120,10 @@ def write_rule(finding: Finding, vulnerable_code: str, fixed_code: str, attempts
             f"Vulnerable code:\n```\n{vulnerable_code}\n```\n\nFixed code:\n```\n{fixed_code}\n```\n\n"
             "The rule must match the vulnerable code and must NOT match the fixed code. Generalize it so it catches "
             "the same pattern elsewhere (other variable names, other functions, other string-building styles). "
-            "Use an id starting with `antibody.learned.`." + feedback
+            "Use an id starting with `trustmebro.learned.`." + feedback
         )
         rule = _ask_json(prompt, RULE_SCHEMA, effort="medium")
+        scanner.LEARNED_RULES.mkdir(parents=True, exist_ok=True)
         path = scanner.LEARNED_RULES / f"{rule['rule_id'].split('.')[-1]}.yaml"
         path.write_text(rule["yaml"])
 
